@@ -1,13 +1,60 @@
 import React, { useState, useEffect } from 'react';
-import { PackageCheck, Clock, CheckCircle2, XCircle, RefreshCw, Eye, QrCode } from 'lucide-react';
+import { PackageCheck, Clock, CheckCircle2, XCircle, RefreshCw, Eye, QrCode, Printer, Download } from 'lucide-react';
 import { api } from '../services/api';
 import VietQRModal from './VietQRModal';
+import InvoiceModal from './InvoiceModal';
 
 export default function AdminOrders({ addToast }) {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [qrOrder, setQrOrder] = useState(null);
+  const [invoiceOrder, setInvoiceOrder] = useState(null);
+
+  const handleExportCSV = () => {
+    if (!orders || orders.length === 0) {
+      addToast('Chưa có dữ liệu đơn hàng để xuất file CSV', 'warning');
+      return;
+    }
+    const headers = [
+      'Mã Đơn Hàng',
+      'Khách Hàng',
+      'Số Điện Thoại',
+      'Email',
+      'Địa Chỉ Giao Hàng',
+      'Phương Thức TT',
+      'Mã Voucher',
+      'Giảm Giá (VND)',
+      'Tổng Thanh Toán (VND)',
+      'Trạng Thái',
+      'Thời Gian Đặt',
+    ];
+    const rows = orders.map((o) => [
+      o.orderCode,
+      `"${(o.customerName || '').replace(/"/g, '""')}"`,
+      o.customerPhone || '',
+      o.customerEmail || '',
+      `"${(o.shippingAddress || '').replace(/"/g, '""')}"`,
+      o.paymentMethod || 'COD',
+      o.couponCode || '',
+      o.discountAmount || 0,
+      o.totalAmount || 0,
+      o.status || 'PENDING',
+      o.createdAt || '',
+    ]);
+    const csvContent =
+      '\uFEFF' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `techpulse_orders_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    addToast('Đã xuất báo cáo đơn hàng ra file CSV thành công!', 'success');
+  };
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -82,13 +129,22 @@ export default function AdminOrders({ addToast }) {
           </p>
         </div>
 
-        <button
-          onClick={fetchOrders}
-          className="btn btn-secondary"
-          style={{ padding: '0.65rem 1rem' }}
-        >
-          <RefreshCw size={16} /> Làm mới
-        </button>
+        <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+          <button
+            onClick={handleExportCSV}
+            className="btn btn-outline"
+            style={{ padding: '0.65rem 1rem' }}
+          >
+            <Download size={16} /> Xuất CSV / Excel
+          </button>
+          <button
+            onClick={fetchOrders}
+            className="btn btn-secondary"
+            style={{ padding: '0.65rem 1rem' }}
+          >
+            <RefreshCw size={16} /> Làm mới
+          </button>
+        </div>
       </div>
 
       <div style={{
@@ -214,6 +270,21 @@ export default function AdminOrders({ addToast }) {
                           <option value="COMPLETED">Đã hoàn thành</option>
                           <option value="CANCELLED">Hủy đơn</option>
                         </select>
+
+                        <button
+                          onClick={() => setInvoiceOrder(o)}
+                          className="btn-icon"
+                          style={{
+                            background: '#eef2ff',
+                            color: 'var(--primary)',
+                            borderRadius: 'var(--radius-sm)',
+                            width: '32px',
+                            height: '32px'
+                          }}
+                          title="Xem & In Hóa Đơn"
+                        >
+                          <Printer size={15} />
+                        </button>
 
                         <button
                           onClick={() => setSelectedOrder(o)}
@@ -374,6 +445,13 @@ export default function AdminOrders({ addToast }) {
           addToast={addToast}
         />
       )}
+
+      {/* Printable Invoice Modal */}
+      <InvoiceModal
+        order={invoiceOrder}
+        isOpen={Boolean(invoiceOrder)}
+        onClose={() => setInvoiceOrder(null)}
+      />
     </div>
   );
 }

@@ -1,0 +1,6 @@
+{
+  "summary":  "Báo cáo Review & Audit toàn diện hệ thống TechPulse E-Commerce (Bảo mật API/RBAC, Toàn vẹn dữ liệu PostgreSQL, UI/UX & Hiệu năng) kèm kế hoạch nâng cấp Quản lý Kiểm duyệt Đánh giá (Review Moderation) và Nhật ký Biến động Tồn kho & Lịch sử Thao tác Admin (Audit & Inventory Log).",
+  "updatedAt":  "2026-10-23T08:25:13.205744222Z",
+  "requestFeedback":  true,
+  "userFacing":  true
+}

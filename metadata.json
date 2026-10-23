@@ -1,0 +1,9 @@
+{
+  "name": "TechPulse Store & Admin | Spring Boot + React + MySQL",
+  "description": "Hệ thống quản lý sản phẩm, bán hàng thương mại điện tử công nghệ cao cấp xây dựng bằng Spring Boot, ReactJS và MySQL.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
+

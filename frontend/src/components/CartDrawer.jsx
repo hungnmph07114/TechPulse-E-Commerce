@@ -103,128 +103,197 @@ export default function CartDrawer({
               </p>
             </div>
           ) : (
-            cartItems.map((item) => (
-              <div
-                key={item.product.id}
-                style={{
-                  display: 'flex',
-                  gap: '1rem',
-                  padding: '0.85rem',
-                  borderRadius: 'var(--radius-md)',
-                  backgroundColor: '#f8fafc',
-                  border: '1px solid var(--border)',
-                  position: 'relative'
-                }}
-              >
-                {/* Image */}
-                <img
-                  src={item.product.imageUrl || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=200&q=80'}
-                  alt={item.product.name}
+            cartItems.map((item) => {
+              const itemKey = item.cartKey || `${item.product.id}__default`;
+              const unitPrice = item.unitPrice || item.product.price;
+              return (
+                <div
+                  key={itemKey}
                   style={{
-                    width: '70px',
-                    height: '70px',
-                    borderRadius: 'var(--radius-sm)',
-                    objectFit: 'cover',
-                    backgroundColor: '#ffffff'
+                    display: 'flex',
+                    gap: '1rem',
+                    padding: '0.85rem',
+                    borderRadius: 'var(--radius-md)',
+                    backgroundColor: '#f8fafc',
+                    border: '1px solid var(--border)',
+                    position: 'relative',
                   }}
-                />
+                >
+                  {/* Image */}
+                  <img
+                    src={
+                      item.product.imageUrl ||
+                      'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=200&q=80'
+                    }
+                    alt={item.product.name}
+                    style={{
+                      width: '70px',
+                      height: '70px',
+                      borderRadius: 'var(--radius-sm)',
+                      objectFit: 'cover',
+                      backgroundColor: '#ffffff',
+                    }}
+                  />
 
-                {/* Info */}
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                  <div style={{ paddingRight: '20px' }}>
-                    <h4 style={{
-                      fontSize: '0.88rem',
-                      fontWeight: 700,
-                      color: 'var(--text-main)',
-                      lineHeight: 1.3,
-                      display: '-webkit-box',
-                      WebkitLineClamp: 1,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden'
-                    }}>
-                      {item.product.name}
-                    </h4>
-                    <p style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--primary)', marginTop: '2px' }}>
-                      {formatVND(item.product.price)}
-                    </p>
-                  </div>
-
-                  {/* Quantity Controls */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
-                    <div style={{
+                  {/* Info */}
+                  <div
+                    style={{
+                      flex: 1,
                       display: 'flex',
-                      alignItems: 'center',
-                      background: '#ffffff',
-                      border: '1px solid var(--border)',
-                      borderRadius: 'var(--radius-sm)'
-                    }}>
-                      <button
-                        onClick={() => onUpdateQuantity(item.product.id, Math.max(1, item.quantity - 1))}
-                        style={{ padding: '2px 8px', fontWeight: 700, color: 'var(--text-muted)' }}
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                    }}
+                  >
+                    <div style={{ paddingRight: '20px' }}>
+                      <h4
+                        style={{
+                          fontSize: '0.88rem',
+                          fontWeight: 700,
+                          color: 'var(--text-main)',
+                          lineHeight: 1.3,
+                          display: '-webkit-box',
+                          WebkitLineClamp: 1,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                        }}
                       >
-                        -
-                      </button>
-                      <span style={{ fontSize: '0.8rem', fontWeight: 600, padding: '0 8px' }}>
-                        {item.quantity}
-                      </span>
-                      <button
-                        onClick={() => onUpdateQuantity(item.product.id, Math.min(item.product.stock, item.quantity + 1))}
-                        style={{ padding: '2px 8px', fontWeight: 700, color: 'var(--text-muted)' }}
+                        {item.product.name}
+                      </h4>
+                      {item.selectedVariant && (
+                        <div
+                          style={{
+                            fontSize: '0.73rem',
+                            fontWeight: 600,
+                            color: 'var(--text-muted)',
+                            backgroundColor: '#e2e8f0',
+                            display: 'inline-block',
+                            padding: '1px 7px',
+                            borderRadius: '999px',
+                            marginTop: '3px',
+                          }}
+                        >
+                          {item.selectedVariant}
+                        </div>
+                      )}
+                      <p
+                        style={{
+                          fontSize: '0.85rem',
+                          fontWeight: 800,
+                          color: 'var(--primary)',
+                          marginTop: '3px',
+                        }}
                       >
-                        +
-                      </button>
+                        {formatVND(unitPrice)}
+                      </p>
                     </div>
 
-                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                      = {formatVND(item.product.price * item.quantity)}
-                    </span>
-                  </div>
-                </div>
+                    {/* Quantity Controls */}
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        marginTop: '0.5rem',
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          background: '#ffffff',
+                          border: '1px solid var(--border)',
+                          borderRadius: 'var(--radius-sm)',
+                        }}
+                      >
+                        <button
+                          onClick={() =>
+                            onUpdateQuantity(itemKey, Math.max(1, item.quantity - 1))
+                          }
+                          style={{
+                            padding: '2px 8px',
+                            fontWeight: 700,
+                            color: 'var(--text-muted)',
+                          }}
+                        >
+                          -
+                        </button>
+                        <span style={{ fontSize: '0.8rem', fontWeight: 600, padding: '0 8px' }}>
+                          {item.quantity}
+                        </span>
+                        <button
+                          onClick={() =>
+                            onUpdateQuantity(
+                              itemKey,
+                              Math.min(item.product.stock, item.quantity + 1)
+                            )
+                          }
+                          style={{
+                            padding: '2px 8px',
+                            fontWeight: 700,
+                            color: 'var(--text-muted)',
+                          }}
+                        >
+                          +
+                        </button>
+                      </div>
 
-                {/* Remove button */}
-                <button
-                  onClick={() => onRemoveItem(item.product.id)}
-                  style={{
-                    position: 'absolute',
-                    top: '8px',
-                    right: '8px',
-                    color: 'var(--text-light)',
-                    padding: '2px'
-                  }}
-                  title="Xóa khỏi giỏ"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            ))
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                        = {formatVND(unitPrice * item.quantity)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Remove button */}
+                  <button
+                    onClick={() => onRemoveItem(itemKey)}
+                    style={{
+                      position: 'absolute',
+                      top: '8px',
+                      right: '8px',
+                      color: 'var(--text-light)',
+                      padding: '2px',
+                    }}
+                    title="Xóa khỏi giỏ"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              );
+            })
           )}
         </div>
 
         {/* Drawer Footer */}
         {cartItems.length > 0 && (
-          <div style={{
-            padding: '1.25rem 1.5rem',
-            borderTop: '1px solid var(--border)',
-            backgroundColor: '#ffffff'
-          }}>
+          <div
+            style={{
+              padding: '1.25rem 1.5rem',
+              borderTop: '1px solid var(--border)',
+              backgroundColor: '#ffffff',
+            }}
+          >
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
               <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Tạm tính:</span>
               <span style={{ fontWeight: 600 }}>{formatVND(totalAmount)}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-              <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Vận chuyển:</span>
-              <span style={{ fontWeight: 600, color: 'var(--success)' }}>Miễn phí</span>
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Vận chuyển tiêu chuẩn:</span>
+              <span style={{ fontWeight: 600, color: totalAmount >= 5000000 ? 'var(--success)' : 'var(--text-main)' }}>
+                {totalAmount >= 5000000 ? 'Miễn phí (Đơn ≥ 5Tr)' : '30.000 ₫'}
+              </span>
             </div>
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              marginBottom: '1.25rem',
-              paddingTop: '0.75rem',
-              borderTop: '1px dashed var(--border)'
-            }}>
-              <span style={{ fontWeight: 700, fontSize: '1.05rem' }}>Tổng cộng:</span>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                marginBottom: '1.25rem',
+                paddingTop: '0.75rem',
+                borderTop: '1px dashed var(--border)',
+              }}
+            >
+              <span style={{ fontWeight: 700, fontSize: '1.05rem' }}>Tạm tính đơn hàng:</span>
               <span style={{ fontWeight: 800, fontSize: '1.25rem', color: 'var(--primary)' }}>
-                {formatVND(totalAmount)}
+                {formatVND(totalAmount + (totalAmount >= 5000000 ? 0 : 30000))}
               </span>
             </div>
 

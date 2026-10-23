@@ -290,7 +290,7 @@ export default function BankSettingsModal({ isOpen, onClose, addToast }) {
             wordBreak: 'break-all',
             fontWeight: 700
           }}>
-            POST http://localhost:8080/api/payment/webhook
+            POST {typeof window !== 'undefined' ? `${window.location.origin}/api/payment/webhook` : '/api/payment/webhook'}
           </div>
           <div style={{ fontSize: '0.75rem', color: 'var(--text-light)', marginTop: '0.5rem' }}>
             * Khi đưa website lên Internet, thay <code style={{ color: 'var(--text-main)' }}>localhost:8080</code> bằng tên miền của bạn (ví dụ: <code style={{ color: 'var(--text-main)' }}>https://api.yourdomain.com/api/payment/webhook</code>).

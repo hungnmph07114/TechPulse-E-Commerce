@@ -16,6 +16,28 @@ export default function ProductModal({
   const [reviews, setReviews] = useState([]);
   const [loadingReviews, setLoadingReviews] = useState(false);
 
+  // Variant selection state (Color + Storage/Edition)
+  const COLOR_OPTIONS = [
+    { id: 'titan-natural', label: 'Titan Tự Nhiên', hex: '#a8a29e' },
+    { id: 'space-black', label: 'Đen Không Gian', hex: '#1e293b' },
+    { id: 'silver-white', label: 'Bạc Ánh Kim', hex: '#e2e8f0' },
+  ];
+
+  const isHighEndDevice = (product?.price || 0) >= 12000000;
+  const EDITION_OPTIONS = isHighEndDevice
+    ? [
+        { id: 'std', label: 'Tiêu chuẩn (256GB)', priceDelta: 0 },
+        { id: 'plus', label: 'Cao cấp (512GB)', priceDelta: 2500000 },
+        { id: 'max', label: 'Flagship (1TB)', priceDelta: 5000000 },
+      ]
+    : [
+        { id: 'std', label: 'Bản Chính Hãng VN/A', priceDelta: 0 },
+        { id: 'combo', label: 'Combo Kèm Gói Bảo Hành VIP (+12T)', priceDelta: 490000 },
+      ];
+
+  const [selectedColor, setSelectedColor] = useState(COLOR_OPTIONS[0].label);
+  const [selectedEdition, setSelectedEdition] = useState(EDITION_OPTIONS[0]);
+
   // Review Form state
   const currentUser = getStoredUser();
   const [newRating, setNewRating] = useState(5);
@@ -25,6 +47,7 @@ export default function ProductModal({
   const [comment, setComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewFilter, setReviewFilter] = useState('ALL');
 
   // Load reviews on mount
   const loadReviews = async () => {
@@ -210,6 +233,11 @@ export default function ProductModal({
             <img
               src={product.imageUrl || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80'}
               alt={product.name}
+              referrerPolicy="no-referrer"
+              onError={(e) => {
+                e.currentTarget.src =
+                  'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80';
+              }}
               style={{ width: '100%', height: '100%', maxHeight: '420px', objectFit: 'cover' }}
             />
             {discountPercent > 0 && (
@@ -262,23 +290,97 @@ export default function ProductModal({
                 background: '#f8fafc',
                 padding: '1rem 1.25rem',
                 borderRadius: 'var(--radius-md)',
-                margin: '1.25rem 0',
+                margin: '1.1rem 0',
                 display: 'flex',
                 alignItems: 'baseline',
                 gap: '0.85rem'
               }}>
                 <span style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--primary)' }}>
-                  {formatVND(product.price)}
+                  {formatVND(product.price + (selectedEdition?.priceDelta || 0))}
                 </span>
                 {discountPercent > 0 && (
                   <span style={{ textDecoration: 'line-through', color: 'var(--text-light)', fontSize: '1.05rem' }}>
-                    {formatVND(product.originalPrice)}
+                    {formatVND(product.originalPrice + (selectedEdition?.priceDelta || 0))}
                   </span>
                 )}
               </div>
 
+              {/* Variant Selectors: Color & Storage/Edition */}
+              <div style={{ marginBottom: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                <div>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.4rem' }}>
+                    Màu sắc: <span style={{ color: 'var(--primary)' }}>{selectedColor}</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    {COLOR_OPTIONS.map((c) => {
+                      const active = selectedColor === c.label;
+                      return (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => setSelectedColor(c.label)}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.45rem',
+                            padding: '0.42rem 0.85rem',
+                            borderRadius: 'var(--radius-md)',
+                            fontSize: '0.8rem',
+                            fontWeight: active ? 700 : 600,
+                            border: `1.5px solid ${active ? 'var(--primary)' : 'var(--border)'}`,
+                            backgroundColor: active ? 'var(--primary-light)' : '#ffffff',
+                            color: active ? 'var(--primary)' : 'var(--text-main)',
+                          }}
+                        >
+                          <span
+                            style={{
+                              width: '12px',
+                              height: '12px',
+                              borderRadius: '999px',
+                              backgroundColor: c.hex,
+                              border: '1px solid rgba(0,0,0,0.2)',
+                            }}
+                          />
+                          {c.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.4rem' }}>
+                    Phiên bản / Cấu hình:
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    {EDITION_OPTIONS.map((ed) => {
+                      const active = selectedEdition.id === ed.id;
+                      return (
+                        <button
+                          key={ed.id}
+                          type="button"
+                          onClick={() => setSelectedEdition(ed)}
+                          style={{
+                            padding: '0.45rem 0.85rem',
+                            borderRadius: 'var(--radius-md)',
+                            fontSize: '0.8rem',
+                            fontWeight: active ? 700 : 600,
+                            border: `1.5px solid ${active ? 'var(--primary)' : 'var(--border)'}`,
+                            backgroundColor: active ? 'var(--primary-light)' : '#ffffff',
+                            color: active ? 'var(--primary)' : 'var(--text-main)',
+                          }}
+                        >
+                          {ed.label}
+                          {ed.priceDelta > 0 ? ` (+${formatVND(ed.priceDelta)})` : ''}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
               {/* Description */}
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', lineHeight: 1.6, marginBottom: '1.5rem' }}>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', lineHeight: 1.6, marginBottom: '1.25rem' }}>
                 {product.description || 'Sản phẩm công nghệ chính hãng, bảo hành 12 tháng, đổi mới trong 30 ngày nếu phát sinh lỗi nhà sản xuất.'}
               </p>
 
@@ -294,7 +396,7 @@ export default function ProductModal({
                 marginBottom: '1.5rem'
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                  <Truck size={16} color="var(--primary)" /> Miễn phí vận chuyển toàn quốc
+                  <Truck size={16} color="var(--primary)" /> Miễn phí đơn từ 5.000.000 ₫
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                   <ShieldCheck size={16} color="var(--success)" /> Bảo hành 12 tháng chính hãng
@@ -337,7 +439,9 @@ export default function ProductModal({
               <button
                 disabled={product.stock <= 0}
                 onClick={() => {
-                  onAddToCart(product, quantity);
+                  const unitPrice = product.price + (selectedEdition?.priceDelta || 0);
+                  const variantStr = `${selectedColor} • ${selectedEdition.label}`;
+                  onAddToCart(product, quantity, variantStr, unitPrice);
                   onClose();
                 }}
                 className="btn btn-primary"
@@ -348,7 +452,7 @@ export default function ProductModal({
                 }}
               >
                 <ShoppingCart size={18} />
-                Thêm vào giỏ ({formatVND(product.price * quantity)})
+                Thêm vào giỏ ({formatVND((product.price + (selectedEdition?.priceDelta || 0)) * quantity)})
               </button>
             </div>
           </div>
@@ -593,6 +697,49 @@ export default function ProductModal({
             </div>
           </div>
 
+          {/* Quick Star & Reply Filter Tabs */}
+          {reviews.length > 0 && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                flexWrap: 'wrap',
+                marginBottom: '1.25rem',
+              }}
+            >
+              {[
+                { id: 'ALL', label: `Tất cả (${reviews.length})` },
+                { id: '5', label: `5 Sao (${reviews.filter((r) => r.rating === 5).length})` },
+                { id: '4', label: `4 Sao (${reviews.filter((r) => r.rating === 4).length})` },
+                {
+                  id: 'REPLIED',
+                  label: `Có phản hồi Shop (${reviews.filter((r) => r.adminReply).length})`,
+                },
+              ].map((tab) => {
+                const active = reviewFilter === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setReviewFilter(tab.id)}
+                    style={{
+                      padding: '0.42rem 0.85rem',
+                      borderRadius: 'var(--radius-md)',
+                      fontSize: '0.8rem',
+                      fontWeight: active ? 700 : 600,
+                      backgroundColor: active ? 'var(--primary)' : '#f1f5f9',
+                      color: active ? '#ffffff' : 'var(--text-muted)',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
           {/* Reviews List */}
           {loadingReviews ? (
             <div style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-muted)' }}>
@@ -621,85 +768,123 @@ export default function ProductModal({
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {reviews.map((rev) => (
-                <div
-                  key={rev.id}
-                  style={{
-                    background: '#ffffff',
-                    border: '1px solid var(--border)',
-                    borderRadius: 'var(--radius-md)',
-                    padding: '1.25rem',
-                    transition: 'all 0.2s ease',
-                    boxShadow: 'var(--shadow-xs)'
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                      {/* Avatar */}
-                      <div style={{
-                        width: '38px',
-                        height: '38px',
-                        borderRadius: '50%',
-                        backgroundColor: 'var(--primary-light)',
-                        color: 'var(--primary)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontWeight: 800,
-                        fontSize: '0.9rem'
-                      }}>
-                        {rev.reviewerName.charAt(0).toUpperCase()}
+              {reviews
+                .filter((r) => {
+                  if (reviewFilter === '5') return r.rating === 5;
+                  if (reviewFilter === '4') return r.rating === 4;
+                  if (reviewFilter === 'REPLIED') return Boolean(r.adminReply);
+                  return true;
+                })
+                .map((rev) => (
+                  <div
+                    key={rev.id}
+                    style={{
+                      background: '#ffffff',
+                      border: '1px solid var(--border)',
+                      borderRadius: 'var(--radius-md)',
+                      padding: '1.25rem',
+                      transition: 'all 0.2s ease',
+                      boxShadow: 'var(--shadow-xs)'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                        {/* Avatar */}
+                        <div style={{
+                          width: '38px',
+                          height: '38px',
+                          borderRadius: '50%',
+                          backgroundColor: 'var(--primary-light)',
+                          color: 'var(--primary)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontWeight: 800,
+                          fontSize: '0.9rem'
+                        }}>
+                          {rev.reviewerName.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                            <span style={{ fontWeight: 800, fontSize: '0.92rem', color: 'var(--text-main)' }}>
+                              {rev.reviewerName}
+                            </span>
+                            <span style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '3px',
+                              background: '#ecfdf5',
+                              color: '#059669',
+                              fontSize: '0.7rem',
+                              fontWeight: 700,
+                              padding: '1px 6px',
+                              borderRadius: 'var(--radius-full)'
+                            }}>
+                              <CheckCircle size={11} /> Đã mua hàng
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-light)', marginTop: '2px' }}>
+                            {formatDate(rev.createdAt)}
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                          <span style={{ fontWeight: 800, fontSize: '0.92rem', color: 'var(--text-main)' }}>
-                            {rev.reviewerName}
-                          </span>
-                          <span style={{
-                            display: 'inline-flex',
+
+                      {/* Stars */}
+                      <div style={{ display: 'flex', color: '#f59e0b' }}>
+                        {[1, 2, 3, 4, 5].map((s) => (
+                          <Star
+                            key={s}
+                            size={15}
+                            fill={s <= rev.rating ? '#f59e0b' : 'none'}
+                            color="#f59e0b"
+                          />
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Comment */}
+                    <p style={{
+                      fontSize: '0.9rem',
+                      color: 'var(--text-muted)',
+                      lineHeight: 1.6,
+                      marginTop: '0.65rem',
+                      whiteSpace: 'pre-line'
+                    }}>
+                      {rev.comment}
+                    </p>
+
+                    {/* Official Admin Response */}
+                    {rev.adminReply && (
+                      <div
+                        style={{
+                          marginTop: '0.85rem',
+                          padding: '0.85rem 1rem',
+                          borderRadius: '10px',
+                          backgroundColor: '#f8fafc',
+                          border: '1px solid #e2e8f0',
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: 'flex',
                             alignItems: 'center',
-                            gap: '3px',
-                            background: '#ecfdf5',
-                            color: '#059669',
-                            fontSize: '0.7rem',
-                            fontWeight: 700,
-                            padding: '1px 6px',
-                            borderRadius: 'var(--radius-full)'
-                          }}>
-                            <CheckCircle size={11} /> Đã mua hàng
-                          </span>
+                            gap: '0.4rem',
+                            fontSize: '0.78rem',
+                            fontWeight: 800,
+                            color: 'var(--primary)',
+                            marginBottom: '4px',
+                          }}
+                        >
+                          <ShieldCheck size={14} />
+                          <span>Phản hồi từ TechPulse Store</span>
                         </div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-light)', marginTop: '2px' }}>
-                          {formatDate(rev.createdAt)}
+                        <div style={{ fontSize: '0.86rem', color: 'var(--text-main)', lineHeight: 1.5 }}>
+                          {rev.adminReply}
                         </div>
                       </div>
-                    </div>
-
-                    {/* Stars */}
-                    <div style={{ display: 'flex', color: '#f59e0b' }}>
-                      {[1, 2, 3, 4, 5].map((s) => (
-                        <Star
-                          key={s}
-                          size={15}
-                          fill={s <= rev.rating ? '#f59e0b' : 'none'}
-                          color="#f59e0b"
-                        />
-                      ))}
-                    </div>
+                    )}
                   </div>
-
-                  {/* Comment */}
-                  <p style={{
-                    fontSize: '0.9rem',
-                    color: 'var(--text-muted)',
-                    lineHeight: 1.6,
-                    marginTop: '0.65rem',
-                    whiteSpace: 'pre-line'
-                  }}>
-                    {rev.comment}
-                  </p>
-                </div>
-              ))}
+                ))}
             </div>
           )}
         </div>

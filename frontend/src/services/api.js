@@ -1,34 +1,72 @@
-const API_BASE = 'http://localhost:8080/api';
+import { logoutFirebase } from '../lib/firebase';
 
-export function getAuthToken() {
-  return localStorage.getItem('techpulse_token');
-}
+const API_BASE = '/api';
 
-export function setAuthSession(authData) {
-  if (authData?.token) {
-    localStorage.setItem('techpulse_token', authData.token);
-    localStorage.setItem('techpulse_user', JSON.stringify({
-      id: authData.id,
-      username: authData.username,
-      email: authData.email,
-      fullName: authData.fullName,
-      role: authData.role
-    }));
+let inMemoryToken = (() => {
+  try {
+    return localStorage.getItem('techpulse_token') || null;
+  } catch {
+    return null;
   }
-}
+})();
 
-export function clearAuthSession() {
-  localStorage.removeItem('techpulse_token');
-  localStorage.removeItem('techpulse_user');
-}
-
-export function getStoredUser() {
+let inMemoryUser = (() => {
   try {
     const raw = localStorage.getItem('techpulse_user');
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
   }
+})();
+
+export function getAuthToken() {
+  return inMemoryToken;
+}
+
+export function setAuthToken(token) {
+  inMemoryToken = token || null;
+  try {
+    if (inMemoryToken) {
+      localStorage.setItem('techpulse_token', inMemoryToken);
+    } else {
+      localStorage.removeItem('techpulse_token');
+    }
+  } catch {}
+}
+
+export function setAuthSession(authData) {
+  if (authData?.token) {
+    setAuthToken(authData.token);
+  }
+  if (authData?.username || authData?.email) {
+    inMemoryUser = {
+      id: authData.id,
+      uid: authData.uid || '',
+      username: authData.username,
+      email: authData.email,
+      fullName: authData.fullName,
+      phone: authData.phone || '',
+      address: authData.address || '',
+      role: authData.role,
+    };
+    try {
+      localStorage.setItem('techpulse_user', JSON.stringify(inMemoryUser));
+    } catch {}
+  }
+}
+
+export function clearAuthSession() {
+  inMemoryToken = null;
+  inMemoryUser = null;
+  try {
+    localStorage.removeItem('techpulse_token');
+    localStorage.removeItem('techpulse_user');
+  } catch {}
+  logoutFirebase();
+}
+
+export function getStoredUser() {
+  return inMemoryUser;
 }
 
 async function request(endpoint, options = {}) {
@@ -62,10 +100,25 @@ async function request(endpoint, options = {}) {
 }
 
 export const api = {
-  // Auth
+  // Auth & Profile
   login: (credentials) => request('/auth/login', { method: 'POST', body: JSON.stringify(credentials) }),
   register: (userData) => request('/auth/register', { method: 'POST', body: JSON.stringify(userData) }),
+  syncFirebaseUser: (idToken) => {
+    setAuthToken(idToken);
+    return request('/auth/firebase-sync', { method: 'POST' });
+  },
   getMe: () => request('/auth/me'),
+  updateProfile: (profileData) => request('/auth/profile', { method: 'PUT', body: JSON.stringify(profileData) }),
+  changePassword: (passwordData) => request('/auth/password', { method: 'PUT', body: JSON.stringify(passwordData) }),
+
+  // Admin Users Management
+  getUsers: () => request('/users'),
+  updateUserRole: (id, role) => request(`/users/${id}/role`, { method: 'PATCH', body: JSON.stringify({ role }) }),
+  deleteUser: (id) => request(`/users/${id}`, { method: 'DELETE' }),
+
+  // Wishlist (PostgreSQL sync)
+  getWishlist: () => request('/wishlist'),
+  toggleWishlist: (productId) => request('/wishlist/toggle', { method: 'POST', body: JSON.stringify({ productId }) }),
 
   // File Upload
   uploadImage: async (file) => {
@@ -94,7 +147,19 @@ export const api = {
   // Categories
   getCategories: () => request('/categories'),
   createCategory: (cat) => request('/categories', { method: 'POST', body: JSON.stringify(cat) }),
+  updateCategory: (id, cat) => request(`/categories/${id}`, { method: 'PUT', body: JSON.stringify(cat) }),
   deleteCategory: (id) => request(`/categories/${id}`, { method: 'DELETE' }),
+
+  // Coupons / Vouchers
+  getActiveCoupons: () => request('/coupons/active'),
+  validateCoupon: (code, orderAmount) => request('/coupons/validate', {
+    method: 'POST',
+    body: JSON.stringify({ code, orderAmount }),
+  }),
+  getAllCoupons: () => request('/coupons'),
+  createCoupon: (coupon) => request('/coupons', { method: 'POST', body: JSON.stringify(coupon) }),
+  updateCoupon: (id, coupon) => request(`/coupons/${id}`, { method: 'PUT', body: JSON.stringify(coupon) }),
+  deleteCoupon: (id) => request(`/coupons/${id}`, { method: 'DELETE' }),
 
   // Products
   getProducts: (params = {}) => {
@@ -115,28 +180,61 @@ export const api = {
   createProduct: (product) => request('/products', { method: 'POST', body: JSON.stringify(product) }),
   updateProduct: (id, product) => request(`/products/${id}`, { method: 'PUT', body: JSON.stringify(product) }),
   deleteProduct: (id) => request(`/products/${id}`, { method: 'DELETE' }),
+  updateProductStock: (id, payload) => request(`/products/${id}/stock`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  }),
 
   // Orders
   getOrders: () => request('/orders'),
+  getMyOrders: () => request('/orders/my-orders'),
+  getRecentOrderCodes: () => request('/orders/recent-codes'),
+  lookupOrders: (code, phone) => {
+    const query = new URLSearchParams();
+    if (code) query.append('code', code);
+    if (phone) query.append('phone', phone);
+    return request(`/orders/lookup?${query.toString()}`);
+  },
   getOrderById: (id) => request(`/orders/${id}`),
   createOrder: (order) => request('/orders', { method: 'POST', body: JSON.stringify(order) }),
+  cancelOrder: (id, verification = {}) => request(`/orders/${id}/cancel`, {
+    method: 'POST',
+    body: JSON.stringify(verification),
+  }),
   updateOrderStatus: (id, status) => request(`/orders/${id}/status`, {
     method: 'PATCH',
     body: JSON.stringify({ status })
   }),
 
-  // Dashboard Stats
+  // Dashboard Stats & Audit Logs
   getStats: () => request('/dashboard/stats'),
+  getAdminAuditLogs: (category = 'ALL') =>
+    request(`/admin/audit-logs${category && category !== 'ALL' ? `?category=${category}` : ''}`),
 
   // Payment & Webhook
   checkPaymentStatus: (orderId) => request(`/payment/order-status/${orderId}`),
   simulateTransfer: (orderId) => request(`/payment/simulate-transfer/${orderId}`, { method: 'POST' }),
   getWebhookInfo: () => request('/payment/webhook-info'),
 
-  // Reviews & Ratings
+  // Reviews & Ratings (Customer + Admin Moderation)
   getProductReviews: (productId) => request(`/products/${productId}/reviews`),
   createProductReview: (productId, reviewData) => request(`/products/${productId}/reviews`, {
     method: 'POST',
     body: JSON.stringify(reviewData)
   }),
+  getAllReviewsAdmin: () => request('/reviews'),
+  moderateReview: (id, payload) => request(`/reviews/${id}/moderate`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  }),
+  deleteReview: (id) => request(`/reviews/${id}`, { method: 'DELETE' }),
+
+  // AI Consultant Chat
+  sendChatMessage: (payload) => request('/ai/chat', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  }),
 };
+
+
+

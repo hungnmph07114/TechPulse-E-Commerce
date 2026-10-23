@@ -1,4 +1,10 @@
 # Root gitignore
+node_modules/
+dist/
+dist-ssr/
+.env
+.env.*
+!.env.example
 .vscode/
 .idea/
 *.log
@@ -15,3 +21,4 @@ backend/target/
 backend/.mvn/wrapper/maven-wrapper.jar
 backend/uploads/*
 !backend/uploads/.gitkeep
+

@@ -40,7 +40,12 @@ export default function ProductFormModal({
         categoryId: initialData.category?.id || (categories[0]?.id || ''),
         featured: !!initialData.featured
       });
-      setUploadMode(initialData.imageUrl?.startsWith('http://localhost:8080/uploads') ? 'file' : 'url');
+      setUploadMode(
+        initialData.imageUrl?.startsWith('http://localhost:8080/uploads') ||
+        initialData.imageUrl?.startsWith('/uploads')
+          ? 'file'
+          : 'url'
+      );
     } else {
       setFormData({
         name: '',
